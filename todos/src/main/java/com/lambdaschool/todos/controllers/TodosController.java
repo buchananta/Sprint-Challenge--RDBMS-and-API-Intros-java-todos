@@ -1,26 +1,45 @@
 package com.lambdaschool.todos.controllers;
 
+import com.lambdaschool.todos.models.Todos;
+import com.lambdaschool.todos.models.User;
+import com.lambdaschool.todos.repository.UserRepository;
 import com.lambdaschool.todos.services.TodosService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.persistence.EntityNotFoundException;
+import javax.validation.Valid;
 
 /**
  * The entry point for client to access user, todos combinations
  */
 @RestController
 @RequestMapping("/todos")
-public class TodosController
+public class TodosController<consumes>
 {
     /**
      * Using the Todos service to process user, todos combinations data
      */
     @Autowired
-    TodosService todosService;
+    private TodosService todosService;
+
+    @Autowired
+    private UserRepository userrepos;
+
+    @PostMapping(value = "/user/{id}", consumes = {"application/json"})
+    public ResponseEntity<?> addTodo(@Valid @RequestBody Todos newtodo,
+                                     @PathVariable long id)
+    {
+        User user = userrepos.findById(id).orElseThrow(() -> new EntityNotFoundException(
+                "User " + id + " Not Found."));
+        newtodo.setTodoid(0);
+        newtodo.setUser(user);
+        todosService.save(newtodo);
+
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
 
     /**
      * Given the todo id, mark the task as complete
